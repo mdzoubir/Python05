@@ -12,7 +12,7 @@ class DataStream(ABC):
 
     def filter_data(self, data_batch: List[Any],
                     criteria: Optional[str] = None) -> List[Any]:
-        return data_batch
+        pass
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
         return {"stream_id": self.stream_id}
@@ -78,7 +78,7 @@ class StreamProcessor:
         return stream.process_batch(data_batch)
 
 
-if __name__ == "__main__":
+def main():
     print("=== CODE NEXUS - POLYMORPHIC STREAM SYSTEM ===")
     print()
 
@@ -136,3 +136,10 @@ if __name__ == "__main__":
 
     print()
     print("All streams processed successfully. Nexus throughput optimal.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print(f"\nError : {e}")
