@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any, List, Dict
 
 
 class DataProcessor(ABC):
@@ -12,19 +12,23 @@ class DataProcessor(ABC):
         pass
 
     def format_output(self, result: str) -> str:
+        if result.startswith("Error"):
+            return result
         return f"Output: {result}"
 
 
 class NumericProcessor(DataProcessor):
     def validate(self, data: Any) -> bool:
-        if not isinstance(data, list): #isinstance not allowed
-            return False
-        return all(isinstance(x, (int, float)) for x in data)  #isinstance not allowed
+        if isinstance(data, list):
+            return all(isinstance(x, (int, float)) for x in data)
+        return isinstance(data, (int, float))
 
     def process(self, data: Any) -> str:
         try:
             if not self.validate(data):
                 raise ValueError("Numeric data verification failed")
+            if isinstance(data, (int, float)):
+                data = [data]
             count = len(data)
             total = sum(data)
             avg = total / count if count > 0 else 0.0
@@ -32,11 +36,6 @@ class NumericProcessor(DataProcessor):
                     f"sum={total}, avg={avg:.1f}")
         except Exception as e:
             return f"Error: {str(e)}"
-
-    def format_output(self, result: str) -> str:
-        if result.startswith("Error"):
-            return result
-        return super().format_output(result)
 
 
 class TextProcessor(DataProcessor):
@@ -58,19 +57,18 @@ class LogProcessor(DataProcessor):
     def validate(self, data: Any) -> bool:
         if not isinstance(data, str):
             return False
-        return any(level in data for level in ["INFO", "ERROR", "ALERT"])
+        parts = data.split(":", 1)
+        if len(parts) != 2:
+            return False
+        return bool(parts[0].strip()) and bool(parts[1].strip())
 
     def process(self, data: Any) -> str:
         try:
             if not self.validate(data):
                 raise ValueError("Log entry verification failed")
-            level = "UNKNOWN"
-            for s in ["ALERT", "ERROR", "INFO"]:
-                if s in data:
-                    level = s
-                    break
-            msg = data.split(":", 1)[1].strip() if ":" in data else data
-            return f"[{level}] {level} level detected: {msg}"
+            header, msg = [part.strip() for part in data.split(":", 1)]
+            level = "ALERT" if "error" in data.lower() else "INFO"
+            return f"[{level}] {header} level detected: {msg}"
         except Exception as e:
             return f"Error: {str(e)}"
 
@@ -81,7 +79,7 @@ if __name__ == "__main__":
 
     print("Initializing Numeric Processor...")
     num_proc = NumericProcessor()
-    num_data = [1, 2, 3, 4, 5]
+    num_data: List[int] = [1, 2, 3, 4, 5]
     print(f"Processing data: {num_data}")
     if num_proc.validate(num_data):
         print("Validation: Numeric data verified")
@@ -109,20 +107,17 @@ if __name__ == "__main__":
     print("=== Polymorphic Processing Demo ===")
     print("Processing multiple data types through same interface...")
 
-    processors: List[DataProcessor] = [
-        NumericProcessor(),
-        TextProcessor(),
-        LogProcessor()
-    ]
+    test_data: Dict[DataProcessor, Any] = {
+        NumericProcessor(): [1, 2, 3],
+        TextProcessor(): "Hello Nexus",
+        LogProcessor(): "INFO: System ready"
+    }
 
-    test_data = [
-        [1, 2, 3],
-        "Hello Nexus",
-        "INFO: System ready"
-    ]
-
-    for i, (proc, data) in enumerate(zip(processors, test_data), 1):
-        print(f"Result {i}: {proc.process(data)}")
+    for i, processor in enumerate(test_data, 1):
+        data = test_data[processor]
+        print(
+            f"Result {i}: {processor.format_output(processor.process(data))}"
+        )
 
     print()
     print("Foundation systems online. Nexus ready for advanced streams.")
