@@ -116,7 +116,7 @@ def main():
     for i, processor in enumerate(test_data, 1):
         data = test_data[processor]
         print(
-            f"Result {i}: {processor.format_output(processor.process(data))}"
+            f"Result {i}: {processor.process(data)}"
         )
 
     print()
