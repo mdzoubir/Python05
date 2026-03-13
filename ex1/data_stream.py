@@ -12,7 +12,7 @@ class DataStream(ABC):
 
     def filter_data(self, data_batch: List[Any],
                     criteria: Optional[str] = None) -> List[Any]:
-        pass
+        return data_batch
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
         return {"stream_id": self.stream_id}
@@ -21,8 +21,11 @@ class DataStream(ABC):
 class SensorStream(DataStream):
     def process_batch(self, data_batch: List[Any]) -> str:
         try:
-            temps = [v for k, v in [d.split(":") for d in data_batch]
-                     if "temp" in k]
+            temps = []
+            for d in data_batch:
+                k, v = d.split(":")
+                if "temp" in k:
+                    temps.append(v)
             temps = [float(v) for v in temps]
             avg = sum(temps) / len(temps) if temps else 0.0
             return (f"Sensor analysis: {len(data_batch)} readings processed, "
