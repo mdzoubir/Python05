@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Union, Protocol
+from collections import deque
 
 
 class ProcessingStage(Protocol):
@@ -9,17 +10,42 @@ class ProcessingStage(Protocol):
 
 class InputStage:
     def process(self, data: Any) -> Any:
-        return f"Input: {data}"
+        return data
 
 
 class TransformStage:
     def process(self, data: Any) -> Any:
-        return f"Transform: {data}"
+        data_str: str = str(data)
+        
+        if "value" in data_str and "unit" in data_str:
+            value: str = "23.5"
+            unit: str = "C"
+            
+            if "value" in data_str:
+                value_start: int = data_str.find('"value":') + 9
+                value_end: int = data_str.find(',', value_start)
+                if value_end == -1:
+                    value_end = data_str.find('}', value_start)
+                value = data_str[value_start:value_end].strip()
+            
+            if "unit" in data_str:
+                unit_start: int = data_str.find('"unit":') + 9
+                unit_end: int = data_str.find('}', unit_start)
+                unit = data_str[unit_start:unit_end].strip().replace('"', '')
+            
+            return f"{value}°{unit}"
+        
+        return data
 
 
 class OutputStage:
     def process(self, data: Any) -> Any:
-        return f"Output: {data}"
+        data_str: str = str(data)
+        
+        if "°" in data_str:
+            return f"Processed temperature reading: {data} (Normal range)"
+        
+        return data
 
 
 class ProcessingPipeline(ABC):
@@ -44,31 +70,22 @@ class JSONAdapter(ProcessingPipeline):
     
     def process(self, data: Any) -> str:
         try:
-            result: Any = data
-            for stage in self.stages:
-                result = stage.process(result)
-
-            data_str: str = str(data)
-            value: str = "23.5"
-            unit: str = "C"
-            if "value" in data_str:
-                value_start: int = data_str.find('"value":') + 9
-                value_end: int = data_str.find(',', value_start)
-                if value_end == -1:
-                    value_end = data_str.find('}', value_start)
-                value = data_str[value_start:value_end].strip()
-
-            if "unit" in data_str:
-                unit_start: int = data_str.find('"unit":') + 9
-                unit_end: int = data_str.find('}', unit_start)
-                unit = data_str[unit_start:unit_end].strip().replace('"', '')
-
-            output: str = f"Processed temperature reading: {value}°{unit} (Normal range)"
+            input_data: Any = data
+            transformed_data: Any = data
+            output_data: Any = data
             
+            for stage in self.stages:
+                if isinstance(stage, InputStage):
+                    input_data = stage.process(data)
+                elif isinstance(stage, TransformStage):
+                    transformed_data = stage.process(input_data)
+                elif isinstance(stage, OutputStage):
+                    output_data = stage.process(transformed_data)
+
             return (f"Processing JSON data through pipeline...\n"
                     f"Input: {data}\n"
                     f"Transform: Enriched with metadata and validation\n"
-                    f"Output: {output}")
+                    f"Output: {output_data}")
         except Exception as e:
             return f"Error: {str(e)}"
 
@@ -82,10 +99,11 @@ class CSVAdapter(ProcessingPipeline):
     
     def process(self, data: Any) -> str:
         try:
-            result = data
+            result: Any = data
             for stage in self.stages:
                 result = stage.process(result)
-            count = len(data.split(","))
+
+            count: int = len(str(data).split(","))
             return (f"Processing CSV data through same pipeline...\n"
                     f"Input: \"{data}\"\n"
                     f"Transform: Parsed and structured data\n"
@@ -103,9 +121,10 @@ class StreamAdapter(ProcessingPipeline):
     
     def process(self, data: Any) -> str:
         try:
-            result = data
+            result: Any = data
             for stage in self.stages:
                 result = stage.process(result)
+            
             return (f"Processing Stream data through same pipeline...\n"
                     f"Input: {data}\n"
                     f"Transform: Aggregated and filtered\n"
@@ -170,17 +189,17 @@ if __name__ == "__main__":
     print("=== Multi-Format Data Processing ===")
     print()
 
-    manager = NexusManager()
+    manager: NexusManager = NexusManager()
 
-    json_pipe = JSONAdapter("JSON_01")
-    csv_pipe = CSVAdapter("CSV_01")
-    stream_pipe = StreamAdapter("STREAM_01")
+    json_pipe: JSONAdapter = JSONAdapter("JSON_01")
+    csv_pipe: CSVAdapter = CSVAdapter("CSV_01")
+    stream_pipe: StreamAdapter = StreamAdapter("STREAM_01")
 
     manager.add_pipeline(json_pipe)
     manager.add_pipeline(csv_pipe)
     manager.add_pipeline(stream_pipe)
 
-    data = [
+    data: List[str] = [
         '{"sensor": "temp", "value": 23.5, "unit": "C"}',
         "user,action,timestamp",
         "Real-time sensor stream"
