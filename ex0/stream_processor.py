@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Union, Optional
 
 
 class DataProcessor(ABC):
+    def __init__(self) -> None:
+        self.last_result: Optional[str] = None
+
     @abstractmethod
     def process(self, data: Any) -> str:
         pass
@@ -18,6 +21,9 @@ class DataProcessor(ABC):
 
 
 class NumericProcessor(DataProcessor):
+    def __init__(self) -> None:
+        super().__init__()
+
     def validate(self, data: Any) -> bool:
         if isinstance(data, list):
             return all(isinstance(x, (int, float)) for x in data)
@@ -66,8 +72,10 @@ class LogProcessor(DataProcessor):
         try:
             if not self.validate(data):
                 raise ValueError("Log entry verification failed")
+            header: str
+            msg: str
             header, msg = [part.strip() for part in data.split(":", 1)]
-            level = "ALERT" if "error" in data.lower() else "INFO"
+            level: str = "ALERT" if "error" in data.lower() else "INFO"
             return f"[{level}] {header} level detected: {msg}"
         except Exception as e:
             return f"Error: {str(e)}"
@@ -107,17 +115,14 @@ def main():
     print("=== Polymorphic Processing Demo ===")
     print("Processing multiple data types through same interface...")
 
-    test_data: Dict[DataProcessor, Any] = {
+    proc_text: Dict[DataProcessor, Union[List[int], str]] = {
         NumericProcessor(): [1, 2, 3],
-        TextProcessor(): "Hello Nexus",
+        TextProcessor(): "Hello, Nexus",
         LogProcessor(): "INFO: System ready"
     }
 
-    for i, processor in enumerate(test_data, 1):
-        data = test_data[processor]
-        print(
-            f"Result {i}: {processor.process(data)}"
-        )
+    for i, (processor, data) in enumerate(proc_text.items(), 1):
+        print(f"Result {i}: {processor.process(data)}")
 
     print()
     print("Foundation systems online. Nexus ready for advanced streams.")
