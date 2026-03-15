@@ -72,10 +72,8 @@ class LogProcessor(DataProcessor):
         try:
             if not self.validate(data):
                 raise ValueError("Log entry verification failed")
-            header: str
-            msg: str
             header, msg = [part.strip() for part in data.split(":", 1)]
-            level: str = "ALERT" if "error" in data.lower() else "INFO"
+            level = "ALERT" if "error" in data.lower() else "INFO"
             return f"[{level}] {header} level detected: {msg}"
         except Exception as e:
             return f"Error: {str(e)}"

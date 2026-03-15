@@ -74,7 +74,7 @@ class TransactionStream(DataStream):
             pref = "+" if flow >= 0 else ""
             return (f"Transaction analysis: {len(data_batch)} "
                     f"{"operations" if len(data_batch) > 1 else "operation"}"
-                    f" processed, net flow: "
+                    f", net flow: "
                     f"{pref}{flow} {"units" if abs(flow) != 1 else "unit"}")
         except Exception as e:
             return f"Error: {str(e)}"
@@ -105,7 +105,7 @@ class EventStream(DataStream):
             )
             return (f"Event analysis: {len(data_batch)} "
                     f"{"events" if len(data_batch) > 1 else "event"}"
-                    f" processed, {errs} {"errors" if errs > 1 else "error"}"
+                    f", {errs} {"errors" if errs > 1 else "error"}"
                     f" detected")
         except Exception as e:
             return f"Error: {str(e)}"
@@ -190,7 +190,7 @@ def main() -> None:
         ["login", "action", "logout"]
     ]
 
-    results = processor.process_all(batches)
+    processor.process_all(batches)
 
     print("Batch 1 Results:")
 
@@ -213,10 +213,11 @@ def main() -> None:
     )
     t_l = t_stream.filter_data(["buy:500", "buy:20"], "priority")
 
-    print(f"Filtered results: {len(s_c)} critical sensor "
-          f"{"alerts" if len(s_c) > 1 else "alert"}, "
-          f"{len(t_l)} large {"transactions" if len(t_l) > 1 else "transaction"}"
-          )
+    print(
+        f"Filtered results: {len(s_c)} critical sensor "
+        f"{"alerts" if len(s_c) > 1 else "alert"}, "
+        f"{len(t_l)} large {"transactions" if len(t_l) > 1 else "transaction"}"
+    )
 
     print()
     print("All streams processed successfully. Nexus throughput optimal.")
